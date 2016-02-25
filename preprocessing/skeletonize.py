@@ -5,13 +5,6 @@ def skeletonize(grid):
     width = len(grid[0])
     height = len(grid)
 
-    #def cross_product(width, height):
-    #    output = set()
-    #    for x in range(width):
-    #        for y in range(height):
-    #            output.add((x, y))
-    #    return output
-
     def get_pixel(row, col):
         if row < 0 or row == height or col < 0 or col == width:
             return 0
@@ -86,13 +79,11 @@ def skeletonize(grid):
                     if (2 <= n_count and n_count <= 6
                             and count_0_to_1(n) == 1
                             and iteration(n, oddIteration)):
-                        #grid[row][col] = 0
                         to_delete.add((row, col))
 
         changed = len(to_delete) > 0
         for (row, col) in to_delete:
             grid[row][col] = 0
-
 
 if __name__ == '__main__':
     import binarization
