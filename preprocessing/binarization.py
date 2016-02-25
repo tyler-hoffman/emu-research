@@ -18,7 +18,7 @@ def to_grid(img, f = identity):
             grid[y][x] = f(pixel_data[x + w * y])
     return grid
 
-def to_img(grid, mode = '1', f = identity):
+def to_img(grid, f = identity, mode = '1'):
     '''Convert a 2d array to an image
     grid -- the 2d array
     mode -- PIL mode ('1' for b/w, 'RGB' for rgb, etc)
@@ -30,12 +30,12 @@ def to_img(grid, mode = '1', f = identity):
 
     for y in range(h):
         for x in range(w):
-            img.putpixel((x, y), 1 - grid[y][x])
+            img.putpixel((x, y), f(grid[y][x]))
 
     return img
 
 def to_binary_grid(image, threshold):
-    return to_grid(image, lambda p: 0 if sum(p) > threshold else 1)
+    return to_grid(image, lambda p: 1 if sum(p) > threshold else 0)
 
 def image_to_binary(image):
     return image.convert('1', None, False)
