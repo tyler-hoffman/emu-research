@@ -46,9 +46,5 @@ if __name__ == '__main__':
     if len(argv) < 2:
         print('use: ./scaling.py <image path>')
     else:
-        size = (800, 800)
         image = Image.open(argv[1])
-        image = image.resize(size, Image.ANTIALIAS)
-        image.show()
-
-        scale(image, (400, 400)).show()
+        scale(image, (800, 800)).show()
