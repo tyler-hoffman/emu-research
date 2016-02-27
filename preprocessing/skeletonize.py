@@ -1,6 +1,12 @@
 #! /usr/bin/env python3
 
 def skeletonize(grid):
+    '''Apply thinning to a binary grid representation of an image.
+    This uses a Thinning algorithm designed by T.Y. Zhang
+    and C. Y. Suen.
+
+    grid -- 2d array of 0s and 1s
+    '''
 
     width = len(grid[0])
     height = len(grid)
@@ -91,7 +97,7 @@ if __name__ == '__main__':
     from PIL import Image
 
     if len(argv) < 2:
-        print('use: ./binarization.py <image path>')
+        print('use: ./skeletonize.py <image path>')
     else:
 
         inverse = lambda i: 0 if i else 1
