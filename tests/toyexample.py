@@ -3,6 +3,9 @@ import sys
 sys.path.append('../hmm')
 import hmm
 
+'''Sample data taken from
+http://homepages.ulb.ac.be/~dgonze/TEACHING/viterbi.pdf'''
+
 def make_model():
     model = hmm.HiddenMarkovModel()
 
