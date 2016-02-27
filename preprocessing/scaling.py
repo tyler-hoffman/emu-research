@@ -4,6 +4,11 @@ avg = lambda l: sum(l) / len(l)
 is_dark = lambda p_colors: avg(p_colors) < 100
 
 def get_bounds(image, f = is_dark):
+    ''' Get the bounds of meaningful data from an image
+    image -- The image
+    f -- filter function; takes a tuple of rgb colors
+        and must return a boolean value for if the pixel has data
+    '''
     pixel_data = list(image.getdata())
     w = image.width
     x_min = 0
@@ -27,7 +32,14 @@ def get_bounds(image, f = is_dark):
 
     return (x_min, y_min, x_max, y_max)
 
-def scale(image, size, f = is_dark, border = 2, background_color = 0xffffff):
+def crop_and_scale(image, size, f = is_dark, border = 2, border_color = 0xffffff):
+    ''' Create a cropped and scaled version of an image
+    image -- The image
+    size -- The size of the image to return
+    f -- filter function for meaningful pixels
+    border -- border thickness
+    border_color -- color for border
+    '''
 
     bounds = get_bounds(image, f)
     output = Image.new(image.mode, size, 0xffffff)
@@ -47,4 +59,4 @@ if __name__ == '__main__':
         print('use: ./scaling.py <image path>')
     else:
         image = Image.open(argv[1])
-        scale(image, (800, 800)).show()
+        crop_and_scale(image, (800, 800)).show()
