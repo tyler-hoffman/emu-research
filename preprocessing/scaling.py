@@ -32,7 +32,7 @@ def get_bounds(image, f = is_dark):
 
     return (x_min, y_min, x_max, y_max)
 
-def crop_and_scale(image, size, f = is_dark, border = 2, border_color = 0xffffff):
+def crop_and_scale(image, size, border = 1, f = is_dark, border_color = 0xffffff):
     ''' Create a cropped and scaled version of an image
     image -- The image
     size -- The size of the image to return
@@ -56,7 +56,13 @@ if __name__ == '__main__':
     from PIL import Image
 
     if len(argv) < 2:
-        print('use: ./scaling.py <image path>')
+        print('use: ./scaling.py <image path> (<size>)')
     else:
         image = Image.open(argv[1])
-        crop_and_scale(image, (800, 800)).show()
+        if len(argv) > 2:
+            size = (int(argv[2]), int(argv[2]))
+        else:
+            size = (800, 800)
+        (crop_and_scale(image, size, 0)
+                .resize((400, 400))
+                .show())
