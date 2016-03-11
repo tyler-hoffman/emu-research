@@ -1,5 +1,7 @@
 #! /usr/bin/env python3
 
+from PIL import Image
+
 avg = lambda l: sum(l) / len(l)
 is_dark = lambda p_colors: avg(p_colors) < 100
 
@@ -53,7 +55,6 @@ def crop_and_scale(image, size, border = 1, f = is_dark, border_color = 0xffffff
 
 if __name__ == '__main__':
     from sys import argv
-    from PIL import Image
 
     if len(argv) < 2:
         print('use: ./scaling.py <image path> (<size>)')
