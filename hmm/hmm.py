@@ -3,11 +3,21 @@ import random
 class HiddenMarkovModel:
     '''Hidden Markov Model'''
 
-    def __init__(self):
+    def __init__(self, pi = None, a = None, b = None):
         self.initial_states = ProbabilityPair()
         self.state_map = {}
         self.possible_observations = set()
         self.current_state = None
+
+        if pi:
+            for label, probability in pi.items():
+                self.add_initial_state(label, probability)
+        if a:
+            for (from_label, to_label), prob in a.items():
+                self.add_transition(from_label, to_label, prob)
+        if b:
+            for (state, obs), prob in b.items():
+                self.add_emission(state, obs, prob)
 
     def add_initial_state(self, element, probability):
         state = self.get_state(element)
@@ -34,6 +44,27 @@ class HiddenMarkovModel:
             state.emissions.normalize()
             state.transitions.normalize()
         self.initial_states.normalize()
+
+    def get_sequence(self, terminate = lambda i, x: not x):
+
+        if type(terminate) is int:
+            f = lambda i, x: not x or i >= terminate
+        else:
+            f = terminate
+
+        self.current_state = None
+        output = []
+        i = 0
+        while True:
+            token = self.next()
+            if f(i, token):
+                return output
+            else:
+                output.append(token)
+                i += 1
+
+        return output
+        #return [self.next() for i in range(length)]
 
     def next(self):
         if self.current_state:
@@ -104,11 +135,8 @@ class HiddenMarkovModel:
         forward_table = self.forward(observed)
         backward_table = self.backward(observed)
         observation_probability = self.probability_of_observed(observed, forward_table)
-        print('--- {}'.format(observation_probability))
+
         def probability_of_transition_at_time(from_label, to_label, t):
-            print('; {}, {}'.format(t, from_label))
-            print(forward_table[t])
-            print(forward_table[t][from_label])
             return (forward_table[t][from_label]
                     * self.transition_probability(from_label, to_label)
                     * self.state_map[to_label].emit_rate(observed[t + 1])
@@ -121,71 +149,79 @@ class HiddenMarkovModel:
                 prob += probability_of_transition_at_time(label, to_label, t)
             return prob
 
-        transition_table = [{} for i in range(len(observed) - 1)]
-        for t in range(len(observed) - 1):
-            for from_state in self.state_map:
-                for to_state in self.state_map:
-                    transition_table[t][(from_state, to_state)] = probability_of_transition_at_time(
-                            from_state, to_state, t)
-            #from_label = observed[t]
-            #to_label = observed[t + 1]
-            #transition_table[t][(to_label, from_label)] = probability_of_transition_at_time(
-            #        to_label, from_label, t)
+        transition_table = {}
+        for from_state in self.state_map:
+            for to_state in self.state_map:
+                key = (from_state, to_state)
+                transition_table[key] = []
+                for t in range(len(observed) - 1):
+                    transition_table[key].append(
+                            probability_of_transition_at_time(
+                                    from_state, to_state, t))
 
+        transition_out_table = {}
+        #TODO: speed this up
+        for state in self.state_map:
+            transition_out_table[state] = []
+            for t in range(len(observed) - 1):
+                transition_out_table[state].append(
+                        probability_of_state_at_time(state, t))
+            transition_out_table[state].append(
+                    forward_table[-1][state] / observation_probability)
 
-        probability_table = [{} for o in observed]
-        for t in range(len(observed)):
-            label = observed[t]
-            probability_table[t][label] = probability_of_state_at_time(label, t)
+        expected_transitions = {}
+        for state in self.state_map:
+            prob = 0
+            for t in range(len(observed) - 1):
+                prob += probability_of_state_at_time(state, t)
+            expected_transitions[state] = prob
+
+        expected_transitions = {k: sum(v) for k, v in transition_table.items()}
+        expected_transitions_out = {k: sum(v[:-1]) for k, v in transition_out_table.items()}
 
         pi_bar = {}
-        for label in self.state_map:
-            pi_bar[label] = probability_table[0][label]
+        for state in self.state_map:
+            pi_bar[state] = transition_out_table[state][0]
+
 
         a_bar = {}
-        for state in self.state_map:
-            a_bar[state] = {}
-            denominator = 0
-
-            for t in len(probability_table):
-                denominator += probability_table[t][state]
-
+        for from_state in self.state_map:
             for to_state in self.state_map:
-                numerator = 0
-                for t in len(transition_table):
-                    numerator += transition_table[t][(state, to_state)]
-                a_bar[state][to_state] = numerator / denominator
+                key = (from_state, to_state)
+
+                if expected_transitions[key]:
+                    a_bar[key] = expected_transitions[key] / expected_transitions_out[from_state]
+                else:
+                    a_bar[key] = 0
 
         b_bar = {}
         for state in self.state_map:
-            b_bar[state] = {}
-            for observation in self.possible_observations:
+            for emission in self.possible_observations:
+                label = (state, emission)
                 numerator = 0
                 denominator = 0
-
+                # TODO: Fix this line
                 for t in range(len(observed)):
-                    if observed[t] == observation:
-                        numerator += probability_table[t][state]
-                    denominator += probability_table[t][state]
+                    obs = observed[t]
+                    denominator += transition_out_table[state][t]
+                    if emission == obs:
+                        numerator += transition_out_table[state][t]
+                b_bar[label] = numerator / denominator
 
-                b_bar[state][observation] = numerator / denominator
-
-        print(a_bar)
-
-        # This isn't so good
+        if True:
+            return pi_bar, a_bar, b_bar
+            
         model = HiddenMarkovModel()
-        for label, probability in pi_bar:
+        for label, probability in pi_bar.items():
             model.add_initial_state(label, probability)
 
-        for from_label, stuff in a_bar.items():
-            for to_label, p in stuff.items():
-                model.add_transition(from_label, to_label, p)
+        for (from_label, to_label), prob in a_bar.items():
+            model.add_transition(from_label, to_label, prob)
 
-        for state, stuff in b_bar.items():
-            for label, p in stuff:
-                model.add_emission(state, label, p)
+        for (state, obs), prob in b_bar.items():
+            model.add_emission(state, obs, prob)
 
-        model.normalize()
+        #ßmodel.normalize()
 
         return model
 
@@ -208,7 +244,7 @@ class HiddenMarkovModel:
             probability[0][label] = (self.initial_states.probability(state)
                     * state.emit_rate(observations[0]))
             backtrace[0][label] = None
-            
+
         # recursive step
         for t in range(1, length):
             for label, state in self.state_map.items():
@@ -296,6 +332,9 @@ class ProbabilityPair:
     def __init__(self):
         self.elements = []
         self.probabilities = []
+
+    def __repr__(self):
+        return str(['{}({})'.format(e, p) for e, p in zip(self.elements, self.probabilities)])
 
     def clear(self):
         self.__init__()
