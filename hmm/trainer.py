@@ -1,6 +1,56 @@
 #! /usr/bin/env python3
 
-from hmm import HiddenMarkovModel
+from hmm.hmm import HiddenMarkovModel
+
+def make_model(states = 8, outputs = 5):
+    model = HiddenMarkovModel()
+
+    for state in range(states):
+        model.add_initial_state(state, 1 / states)
+        for output in range(outputs):
+            model.add_emission(state, output, 1 / outputs)
+
+    for state in range(states):
+        for to_state in range(states):
+            model.add_transition(state, to_state, 1 / states)
+
+    model.normalize()
+    return model
+
+def make_2d_model(width, height, max_jump, outputs = 5):
+    model = HiddenMarkovModel()
+
+    states = width * height
+    for state in range(states):
+        model.add_initial_state(state, 1 / states)
+        for output in range(outputs):
+            model.add_emission(state, output, 1 / outputs)
+
+    for row in range(height):
+        for col in range(width):
+            for i in range(row, min(height, row + max_jump + 1)):
+                model.add_transition(state, i * width + col, 1)
+            for i in range(col, min(width, col + max_jump + 1)):
+                model.add_transition(state, row * width + i, 1)
+
+    model.normalize()
+    return model
+
+def make_linear_model(states = 25, outputs = 5):
+    model = HiddenMarkovModel()
+
+    for state in range(states):
+        model.add_initial_state(state, 1 / states)
+        for output in range(outputs):
+            model.add_emission(state, output, 1 / outputs)
+
+    for state in range(states):
+        for to_state in range(state, min(states, state + 3)):
+            model.add_transition(state, to_state, 1 / states)
+
+    model.normalize()
+    return model
+
 
 def train(model, sequences, epochs = 1, callback = None):
 
@@ -11,7 +61,7 @@ def train(model, sequences, epochs = 1, callback = None):
     for i in range(epochs):
         if callback:
             callback(i)
-
+        print(i)
         pi = None
         a = None
         b = None
@@ -32,3 +82,24 @@ def train(model, sequences, epochs = 1, callback = None):
         model.normalize()
 
     return model
+
+def get_success_rate(label, data_sets, hmms):
+    count = 0
+    correct = 0
+
+    for observed in data_sets:
+
+        best_label = None
+        max_prob = 0
+
+        for name, model in hmms.items():
+            prob = model.probability_of_observed(observed)
+
+            if prob > max_prob:
+                max_prob = prob
+                best_label = name
+
+        count += 1
+        if label == best_label:
+            correct += 1
+    return correct, count
