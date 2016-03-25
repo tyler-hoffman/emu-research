@@ -1,9 +1,11 @@
 #! /usr/bin/env python3
 
-from scaling import crop_and_scale
+from preprocessing.scaling import crop_and_scale
 from PIL import Image
 
 def avg(array):
+    if isinstance(array, int):
+        return array
     return sum(array) / len(array)
 
 def normalize(values):
@@ -16,7 +18,7 @@ def quantize(values, states):
     return [int(v / step) for v in values]
 
 
-def get_values(image, size, states = 8):
+def get_values(image, size, states = 5):
     image = crop_and_scale(image, size, 0)
 
     pixels = [avg(p) for p in list(image.getdata())]
