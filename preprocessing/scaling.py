@@ -2,7 +2,7 @@
 
 from PIL import Image
 
-avg = lambda l: sum(l) / len(l)
+avg = lambda l: l if isinstance(l, int) else sum(l) / len(l)
 is_dark = lambda p_colors: avg(p_colors) < 100
 
 def get_bounds(image, f = is_dark):
