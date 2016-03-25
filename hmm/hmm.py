@@ -95,8 +95,7 @@ class HiddenMarkovModel:
             next_steps = {label: 0 for label in self.state_map}
 
             for label, state in self.state_map.items():
-                for transition in state.transitions:
-                    (to_state, prob) = transition
+                for (to_state, prob) in state.transitions:
                     next_steps[to_state.element] += prob * table[t][label]
 
             for label, total in next_steps.items():
@@ -115,11 +114,19 @@ class HiddenMarkovModel:
         for t in range(length - 2, -1, -1):
             for from_label, from_state in self.state_map.items():
                 summation = 0
-                for to_label, to_state in self.state_map.items():
+                #print(from_label)
+                summation = 0
+                for (to_state, prob) in from_state.transitions:
+                    to_label = to_state.element
                     summation += (from_state.transition_rate(to_state)
                             * to_state.emit_rate(observed[t + 1])
                             * table[t + 1][to_label])
                 table[t][from_label] = summation
+                #for to_label, to_state in self.state_map.items():
+                #    summation += (from_state.transition_rate(to_state)
+                #            * to_state.emit_rate(observed[t + 1])
+                #            * table[t + 1][to_label])
+                #table[t][from_label] = summation
 
         return table
 
