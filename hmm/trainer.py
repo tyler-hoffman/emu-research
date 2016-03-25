@@ -20,14 +20,15 @@ def make_model(states = 8, outputs = 5):
 def make_2d_model(width, height, max_jump, outputs = 5):
     model = HiddenMarkovModel()
 
+    model.add_initial_state(0, 1)
     states = width * height
     for state in range(states):
-        model.add_initial_state(state, 1 / states)
         for output in range(outputs):
             model.add_emission(state, output, 1 / outputs)
 
     for row in range(height):
         for col in range(width):
+            state = row * width + col
             for i in range(row, min(height, row + max_jump + 1)):
                 model.add_transition(state, i * width + col, 1)
             for i in range(col, min(width, col + max_jump + 1)):
@@ -77,7 +78,6 @@ def train(model, sequences, epochs = 1, callback = None):
                 merge(a, new_a)
                 merge(b, new_b)
             j += 1
-
         model = HiddenMarkovModel(pi, a, b)
         model.normalize()
 
