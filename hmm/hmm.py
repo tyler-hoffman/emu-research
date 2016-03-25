@@ -158,7 +158,9 @@ class HiddenMarkovModel:
 
         transition_table = {}
         for from_state in self.state_map:
-            for to_state in self.state_map:
+            for (state, _) in self.state_map[from_state].transitions:
+                to_state = state.element
+            
                 key = (from_state, to_state)
                 transition_table[key] = []
                 for t in range(len(observed) - 1):
