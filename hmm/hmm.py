@@ -176,27 +176,19 @@ class HiddenMarkovModel:
                     transition_table[key].append(self.probability_of_transition_at_time(
                             from_state, to_state, t, forward_table, backward_table, observation_probability, observed))
 
-        # memoize probability of state at given times
-        probability_at_times = {}
-        for state in self.state_map:
-            for t in range(len(observed) - 1):
-                probability_at_times[(state, t)] = self.probability_of_state_at_time(state, t, forward_table, backward_table, observation_probability, observed)
-
         transition_out_table = {}
-        #TODO: speed this up
-        for state in self.state_map:
-            transition_out_table[state] = []
-            for t in range(len(observed) - 1):
-                transition_out_table[state].append(probability_at_times[(state, t)])
-            transition_out_table[state].append(
-                    forward_table[-1][state] / observation_probability)
-
         expected_transitions = {}
         for state in self.state_map:
-            prob = 0
+            transition_out_table[state] = [0 for obs in observed]
+            total_prob = 0
             for t in range(len(observed) - 1):
-                prob += probability_at_times[(state, t)]#self.probability_of_state_at_time(state, t, forward_table, backward_table, observation_probability, observed)
+                prob = self.probability_of_state_at_time(state, t, forward_table, backward_table, observation_probability, observed)
+                total_prob += prob
+                transition_out_table[state][t] = prob
+
             expected_transitions[state] = prob
+            transition_out_table[state][-1] = forward_table[-1][state] / observation_probability
+
 
         expected_transitions = {k: sum(v) for k, v in transition_table.items()}
         expected_transitions_out = {k: sum(v[:-1]) for k, v in transition_out_table.items()}
@@ -210,7 +202,6 @@ class HiddenMarkovModel:
         for from_state, state in self.state_map.items():
             for to_state2, prob in state.transitions:
                 to_state = to_state2.element
-            #for to_state in self.state_map:
                 key = (from_state, to_state)
 
                 if expected_transitions[key]:
