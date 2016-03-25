@@ -114,19 +114,22 @@ class HiddenMarkovModel:
         for t in range(length - 2, -1, -1):
             for from_label, from_state in self.state_map.items():
                 summation = 0
-                #print(from_label)
-                summation = 0
+                summation1 = 0
                 for (to_state, prob) in from_state.transitions:
                     to_label = to_state.element
+                    summation1 += (from_state.transition_rate(to_state)
+                            * to_state.emit_rate(observed[t + 1])
+                            * table[t + 1][to_label])
+                table[t][from_label] = summation1
+                for to_label, to_state in self.state_map.items():
                     summation += (from_state.transition_rate(to_state)
                             * to_state.emit_rate(observed[t + 1])
                             * table[t + 1][to_label])
                 table[t][from_label] = summation
-                #for to_label, to_state in self.state_map.items():
-                #    summation += (from_state.transition_rate(to_state)
-                #            * to_state.emit_rate(observed[t + 1])
-                #            * table[t + 1][to_label])
-                #table[t][from_label] = summation
+                #print(', '.join('{}: {}'.format(to_state.element, prob) for (to_state, prob) in from_state.transitions))
+                #print(', '.join('{}: {}'.format(to_state, from_state.transition_rate(self.state_map[to_state])) for to_state in self.state_map))
+                #print('-'*10)
+                #print(summation == summation1)
 
         return table
 
@@ -189,8 +192,10 @@ class HiddenMarkovModel:
 
 
         a_bar = {}
-        for from_state in self.state_map:
-            for to_state in self.state_map:
+        for from_state, state in self.state_map.items():
+            for to_state2, prob in state.transitions:
+                to_state = to_state2.element
+            #for to_state in self.state_map:
                 key = (from_state, to_state)
 
                 if expected_transitions[key]:

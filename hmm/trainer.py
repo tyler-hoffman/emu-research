@@ -29,10 +29,16 @@ def make_2d_model(width, height, max_jump, outputs = 5):
     for row in range(height):
         for col in range(width):
             state = row * width + col
-            for i in range(row, min(height, row + max_jump + 1)):
-                model.add_transition(state, i * width + col, 1)
-            for i in range(col, min(width, col + max_jump + 1)):
-                model.add_transition(state, row * width + i, 1)
+            max_row = min(height, row + max_jump + 1)
+            max_col = min(width, col + max_jump + 1)
+            for to_row in range(row, max_row):
+                for to_col in range(col, max_col):
+                    to_state = to_row * width + to_col
+                    model.add_transition(state, to_state, 1)
+            #for i in range(row, min(height, row + max_jump + 1)):
+            #    model.add_transition(state, i * width + col, 1)
+            #for i in range(col, min(width, col + max_jump + 1)):
+            #    model.add_transition(state, row * width + i, 1)
 
     model.normalize()
     return model

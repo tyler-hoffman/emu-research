@@ -5,12 +5,14 @@ from hmm.trainer import make_model, train, get_success_rate
 from utils.mnstreader import get_image_data, get_labels
 from PIL import Image
 import hmm.trainer as trainer
+from time import time
 
 if __name__ == '__main__':
+    begin = time()
     image_file = './images/mnst/train-images-idx3-ubyte'
     label_file = './images/mnst/train-labels-idx1-ubyte'
 
-    count = 100
+    count = 50
 
     images, size = get_image_data(image_file, count)
     labels = get_labels(label_file)[:count]
@@ -35,13 +37,13 @@ if __name__ == '__main__':
             data_sets[label] = [image]
             #hmms[label] = make_model(40, shade_count) #make_linear_model(14, shade_count)
             #hmms[label] = trainer.make_linear_model(44, shade_count)
-            hmms[label] = trainer.make_2d_model(5, 5, 3, shade_count)
+            hmms[label] = trainer.make_2d_model(5, 5, 1, shade_count)
     iterations = 2
     rates = {}
     for label in data_sets:
         print('training: {}'.format(label))
         hmms[label] = train(hmms[label], data_sets[label], iterations)
-
+    print(time() - begin, 's')
     total_count = 0
     total_correct = 0
     for label, data in data_sets.items():
