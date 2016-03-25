@@ -126,10 +126,6 @@ class HiddenMarkovModel:
                             * to_state.emit_rate(observed[t + 1])
                             * table[t + 1][to_label])
                 table[t][from_label] = summation
-                #print(', '.join('{}: {}'.format(to_state.element, prob) for (to_state, prob) in from_state.transitions))
-                #print(', '.join('{}: {}'.format(to_state, from_state.transition_rate(self.state_map[to_state])) for to_state in self.state_map))
-                #print('-'*10)
-                #print(summation == summation1)
 
         return table
 
@@ -138,43 +134,60 @@ class HiddenMarkovModel:
             forward_table = self.forward(observed)
         return sum(forward_table[-1].values())
 
+    def probability_of_transition_at_time(self, from_label, to_label, t, forward_table, backward_table, observation_probability, observed):
+        return (forward_table[t][from_label]
+                * self.transition_probability(from_label, to_label)
+                * self.state_map[to_label].emit_rate(observed[t + 1])
+                * backward_table[t + 1][to_label]
+                / observation_probability)
+
+    def probability_of_state_at_time(self, label, t, forward_table, backward_table, observation_probability, observed):
+        prob = 0
+        for to_label in self.state_map:
+            prob += self.probability_of_transition_at_time(label, to_label, t, forward_table, backward_table, observation_probability, observed)
+        return prob
+
     def baum_welsch(self, observed):
         forward_table = self.forward(observed)
         backward_table = self.backward(observed)
         observation_probability = self.probability_of_observed(observed, forward_table)
 
-        def probability_of_transition_at_time(from_label, to_label, t):
-            return (forward_table[t][from_label]
-                    * self.transition_probability(from_label, to_label)
-                    * self.state_map[to_label].emit_rate(observed[t + 1])
-                    * backward_table[t + 1][to_label]
-                    / observation_probability)
+        #def probability_of_transition_at_time(from_label, to_label, t):
+        #    return (forward_table[t][from_label]
+        #            * self.transition_probability(from_label, to_label)
+        #            * self.state_map[to_label].emit_rate(observed[t + 1])
+        #            * backward_table[t + 1][to_label]
+        #            / observation_probability)
 
-        def probability_of_state_at_time(label, t):
-            prob = 0
-            for to_label in self.state_map:
-                prob += probability_of_transition_at_time(label, to_label, t)
-            return prob
+        #def probability_of_state_at_time(label, t):
+        #    prob = 0
+        #    for to_label in self.state_map:
+        #        prob += probability_of_transition_at_time(label, to_label, t, forward_table, backward_table, observation_probability, observed)
+        #    return prob
 
         transition_table = {}
         for from_state in self.state_map:
             for (state, _) in self.state_map[from_state].transitions:
                 to_state = state.element
-            
+
                 key = (from_state, to_state)
                 transition_table[key] = []
                 for t in range(len(observed) - 1):
-                    transition_table[key].append(
-                            probability_of_transition_at_time(
-                                    from_state, to_state, t))
+                    transition_table[key].append(self.probability_of_transition_at_time(
+                            from_state, to_state, t, forward_table, backward_table, observation_probability, observed))
+
+        # memoize probability of state at given times
+        probability_at_times = {}
+        for state in self.state_map:
+            for t in range(len(observed) - 1):
+                probability_at_times[(state, t)] = self.probability_of_state_at_time(state, t, forward_table, backward_table, observation_probability, observed)
 
         transition_out_table = {}
         #TODO: speed this up
         for state in self.state_map:
             transition_out_table[state] = []
             for t in range(len(observed) - 1):
-                transition_out_table[state].append(
-                        probability_of_state_at_time(state, t))
+                transition_out_table[state].append(probability_at_times[(state, t)])
             transition_out_table[state].append(
                     forward_table[-1][state] / observation_probability)
 
@@ -182,7 +195,7 @@ class HiddenMarkovModel:
         for state in self.state_map:
             prob = 0
             for t in range(len(observed) - 1):
-                prob += probability_of_state_at_time(state, t)
+                prob += probability_at_times[(state, t)]#self.probability_of_state_at_time(state, t, forward_table, backward_table, observation_probability, observed)
             expected_transitions[state] = prob
 
         expected_transitions = {k: sum(v) for k, v in transition_table.items()}
