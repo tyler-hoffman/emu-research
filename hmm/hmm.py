@@ -120,16 +120,9 @@ class HiddenMarkovModel:
         return table
 
     def probability_of_observed(self, observed, forward_table = None):
-
         if not forward_table:
             forward_table = self.forward(observed)
-
-        final_col = forward_table[-1]
-        prob = 0
-        for p in final_col.values():
-            prob += p
-
-        return prob
+        return sum(forward_table[-1].values())
 
     def baum_welsch(self, observed):
         forward_table = self.forward(observed)
@@ -210,7 +203,7 @@ class HiddenMarkovModel:
 
         if True:
             return pi_bar, a_bar, b_bar
-            
+
         model = HiddenMarkovModel()
         for label, probability in pi_bar.items():
             model.add_initial_state(label, probability)
