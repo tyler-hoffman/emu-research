@@ -84,20 +84,24 @@ class HiddenMarkovModel:
     def forward(self, observed):
         table = [{} for o in observed]
         states = self.state_map.keys()
+
         for s in states:
             state = self.get_state(s)
             initial_rate = self.initial_states.probability(state)
             emit_rate = state.emit_rate(observed[0])
             table[0][s] = initial_rate * emit_rate
 
-        for t in range(1, len(observed)):
+        for t in range(0, len(observed) - 1):
+            next_steps = {label: 0 for label in self.state_map}
+
             for label, state in self.state_map.items():
-                emit_rate = state.emit_rate(observed[t])
-                summation = 0
-                for from_label, from_state in self.state_map.items():
-                    summation += (table[t - 1][from_label]
-                            * from_state.transition_rate(state))
-                table[t][label] = summation * emit_rate
+                for transition in state.transitions:
+                    (to_state, prob) = transition
+                    next_steps[to_state.element] += prob * table[t][label]
+
+            for label, total in next_steps.items():
+                rate = self.state_map[label].emit_rate(observed[t + 1])
+                table[t + 1][label] = rate * total
 
         return table
 
@@ -320,6 +324,21 @@ def update_probabilities(probability_pair, probs):
     for label, probability in probs.items():
         probability_pair.add(label, probability)
 
+class ProbIterator:
+    def __init__(self, prob_pair):
+        self.prob_pair = prob_pair
+        self.current = 0
+
+    def __next__(self):
+
+        prob_pair = self.prob_pair
+        if self.current == len(prob_pair.elements):
+            raise StopIteration
+        else:
+            self.current += 1
+            element = prob_pair.elements[self.current - 1]
+            return (element, prob_pair.probability(element))
+
 class ProbabilityPair:
 
     def __init__(self):
@@ -328,6 +347,9 @@ class ProbabilityPair:
 
     def __repr__(self):
         return str(['{}({})'.format(e, p) for e, p in zip(self.elements, self.probabilities)])
+
+    def __iter__(self):
+        return ProbIterator(self)
 
     def clear(self):
         self.__init__()
