@@ -1,32 +1,10 @@
 #! /usr/bin/env python3
 
 import json
-from hmm.hmm import HiddenMarkovModel, State, ProbabilityPair
+from hmm.hmm import HiddenMarkovModel
 
 def prob_pair_to_dict(prob_pair, to_element = lambda x: x):
     return [(to_element(state), prob) for state, prob in prob_pair]
-
-def dict_to_prob_pair(data, to_element = lambda x: x):
-    output = ProbabilityPair()
-    prev = 0
-    for e, p in zip(data['elements'], data['probabilities']):
-        p -= prev
-        output.add(to_element(e), p)
-        prev += p
-    return output
-
-def state_to_dict(state):
-    return {
-        'element': state.element.element,
-        'transitions': prob_pair_to_dict(state.transitions),
-        'emissions': prob_pair_to_dict(state.emissions.to_dict)
-    }
-
-def dict_to_state(data):
-    output = State(data['element'])
-    #output.transitions = dict_to_prob_pair(data['transitions'])
-    #output.emissions = dict_to_prob_pair(data['emissions'])
-    return output
 
 initial_states = 'initial_states'
 emissions = 'emissions'
@@ -58,7 +36,6 @@ def dict_to_hmm(data):
             output.add_transition(int(from_state), int(to_state), prob)
         for (e, prob) in emit:
             output.add_emission(int(from_state), int(e), prob)
-
 
     return output
 

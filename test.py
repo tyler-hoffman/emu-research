@@ -72,11 +72,11 @@ if __name__ == '__main__':
     import hmm.hmmio as hmmio
 
     # parameters
-    count = 20
-    test_count = 200
+    count = 80
+    test_count = 100
     shade_count = 5
     hmm_size = 5
-    resample_size = (6, 6)
+    resample_size = (7, 7)
 
     test_image_file = './images/mnst/train-images-idx3-ubyte'
     test_label_file = './images/mnst/train-labels-idx1-ubyte'
@@ -84,7 +84,9 @@ if __name__ == '__main__':
     test_data_sets = get_data_sets(test_image_file, test_label_file, test_count, resample_size)
 
     if len(sys.argv) == 3 and sys.argv[1] == '-r':
+        print('loading models...')
         hmms = hmmio.load(sys.argv[2])
+        print('models loaded.')
     else:
 
         image_file = './images/mnst/train-images-idx3-ubyte'
