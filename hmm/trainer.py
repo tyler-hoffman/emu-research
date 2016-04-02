@@ -52,7 +52,7 @@ def make_linear_model(states = 25, outputs = 5):
             model.add_emission(state, output, 1 / outputs)
 
     for state in range(states):
-        for to_state in range(state, min(states, state + 3)):
+        for to_state in range(state, min(states, state + 4)):
             model.add_transition(state, to_state, 1 / states)
 
     model.normalize()
@@ -89,9 +89,13 @@ def train(model, sequences, epochs = 1, callback = None):
 
     return model
 
-def get_success_rate(label, data_sets, hmms):
+def get_success_rate(label, data_sets, hmms, maximize = lambda model, length, prob: 1):
     count = 0
     correct = 0
+
+    length = len(data_sets[0])
+
+    #max_probs = {label: hmm.get_extreme_probability(observation_length, maximizer) for label, hmm in hmms.items()}
 
     for observed in data_sets:
 
@@ -100,7 +104,7 @@ def get_success_rate(label, data_sets, hmms):
 
         for name, model in hmms.items():
             prob = model.probability_of_observed(observed)
-
+            prob /= maximize(model, length, prob)
             if prob > max_prob:
                 max_prob = prob
                 best_label = name
